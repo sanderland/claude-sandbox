@@ -397,6 +397,7 @@ By default, creates VMs from Lima's default template with Claude settings.
 
 Commands:
   (none)        Start Claude in the VM (default)
+  remote        Start Claude in remote-control mode (control from desktop/web)
   shell         Open a shell in the VM instead of Claude
   stop          Stop the project's VM
   stop-all      Stop all sandbox VMs
@@ -427,6 +428,8 @@ Examples:
   claude-sandbox -- --resume               # Pass args to claude
   claude-sandbox status                    # See all VMs
   claude-sandbox -p 8080,3000:3000         # Expose ports 8080 and 3000
+  claude-sandbox remote                    # Start remote-control mode
+  claude-sandbox remote -- --name "My App" # Remote with custom session name
 
   # Clone from an existing VM (e.g., one with dev tools pre-installed)
   claude-sandbox --clone-from my-dev-tools
@@ -491,7 +494,7 @@ main() {
             force_stop=true
         elif [ -z "$command" ]; then
             case "$arg" in
-                shell|stop|delete|status|stop-all|prune|restart-hooks|--help|-h)
+                remote|shell|stop|delete|status|stop-all|prune|restart-hooks|--help|-h)
                     command="$arg"
                     ;;
                 *)
@@ -601,7 +604,12 @@ main() {
     fi
 
     # Build claude command with any extra arguments
-    local claude_cmd="claude --dangerously-skip-permissions"
+    local claude_cmd
+    if [ "$command" = "remote" ]; then
+        claude_cmd="claude remote-control --dangerously-skip-permissions"
+    else
+        claude_cmd="claude --dangerously-skip-permissions"
+    fi
     if [ ${#claude_args[@]} -gt 0 ]; then
         for arg in "${claude_args[@]}"; do
             claude_cmd+=" $(printf '%q' "$arg")"
